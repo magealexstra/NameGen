@@ -27,3 +27,7 @@ dist/
 # Local settings
 settings.ini
 secrets.ini
+
+# Test data and tests
+Data/
+tests/
