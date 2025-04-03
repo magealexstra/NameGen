@@ -1,0 +1,8 @@
+# Core dependencies
+PySide6==6.6.0     # Qt-based GUI framework
+Pillow==10.0.0     # Image processing library
+
+# Development dependencies
+pytest==7.4.0      # For unit testing
+pylint==2.17.5     # For code quality checks
+black==23.7.0      # For code formatting
