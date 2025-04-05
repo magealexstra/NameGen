@@ -14,8 +14,8 @@ from PIL import Image, ImageQt
 
 # Import renamer engine functions
 from renamer_engine import (
-    get_example_previews, 
-    check_conflicts_and_validity, 
+    get_example_previews,
+    check_conflicts_and_validity,
     apply_rename
 )
 
@@ -378,10 +378,7 @@ class MainWindow(QMainWindow):
             files.sort()
             
             # Limit the number of images to load (to prevent freezing with large folders)
-            max_images = 100
-            if len(files) > max_images:
-                print(f"Limiting to {max_images} images instead of {len(files)}")
-                files = files[:max_images]
+            # Removed image loading limit to allow all images to be loaded
             
             # Add images to list widget
             for i, filename in enumerate(files):

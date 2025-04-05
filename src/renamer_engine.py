@@ -7,50 +7,7 @@ import re
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional, Any, Union
 
-def add_prefix_suffix(name: str, prefix: str = "", suffix: str = "") -> str:
-    """
-    Add prefix and/or suffix to a filename.
-    
-    Args:
-        name: Original filename (with or without extension)
-        prefix: String to add at the beginning of the name
-        suffix: String to add at the end of the name (before extension)
-    
-    Returns:
-        Modified filename
-    """
-    # Split the name into base and extension
-    base_name, ext = os.path.splitext(name)
-    
-    # Apply prefix and suffix to the base name
-    new_base = f"{prefix}{base_name}{suffix}"
-    
-    # Return the modified name with the original extension
-    return f"{new_base}{ext}"
 
-def replace_substring(name: str, find: str, replace: str) -> str:
-    """
-    Replace occurrences of 'find' with 'replace' in the filename.
-    
-    Args:
-        name: Original filename (with or without extension)
-        find: Substring to find
-        replace: Replacement string
-    
-    Returns:
-        Modified filename
-    """
-    # Split the name into base and extension
-    base_name, ext = os.path.splitext(name)
-    
-    # Perform the replacement on the base name
-    if find:  # Avoid empty string replacements
-        new_base = base_name.replace(find, replace)
-    else:
-        new_base = base_name
-    
-    # Return the modified name with the original extension
-    return f"{new_base}{ext}"
 
 def improved_title_case(text: str) -> str:
     """
@@ -127,7 +84,7 @@ def change_case(name: str, case_option: str) -> str:
         new_base = base_name.lower()
     elif case_option == "upper":
         new_base = base_name.upper()
-    elif case_option == "title case":  # Changed from "title" to "title case"
+    elif case_option in ("title", "title case"):
         new_base = improved_title_case(base_name)
     else:  # "preserve" or any other value
         new_base = base_name
@@ -155,6 +112,64 @@ def format_number(number: int, padding: int = 2, start: int = 1, step: int = 1) 
     # Format the number with the specified padding
     return str(actual_number).zfill(padding)
 
+
+def generate_preview_name(original_path: str, index: int, scheme_params: Dict[str, Any]) -> str:
+    """
+    Generate a preview of the renamed file based on the renaming scheme.
+    
+    Args:
+        original_path: Path to the original file
+        index: The index of the file in the list (0-based)
+        scheme_params: Dictionary with renaming scheme parameters:
+            - replace_name: Whether to replace the entire name with new_name
+            - new_name: New name to use if replacing the entire name
+            - prefix: String to add at the beginning (if not replacing the name)
+            - suffix: String to add at the end (if not replacing the name)
+            - find: Substring to find
+            - replace: Replacement string
+            - case_option: Type of case change ('lower', 'upper', 'title', 'preserve')
+            - use_numbering: Whether to add sequential numbers
+            - number_options: Options for sequential numbering
+    
+    Returns:
+        Preview of the renamed file (filename only, no path)
+    """
+    # Get the original filename without path
+    filename = os.path.basename(original_path)
+
+    # If replacing the entire name, use the new name
+    if scheme_params.get("replace_name", False):
+        # Keep the original extension
+        _, ext = os.path.splitext(filename)
+        filename = scheme_params.get("new_name", "") + ext
+    else:
+        # Otherwise, apply prefix and suffix manually
+        prefix = scheme_params.get("prefix", "")
+        suffix = scheme_params.get("suffix", "")
+        base_name, ext = os.path.splitext(filename)
+        filename = f"{prefix}{base_name}{suffix}{ext}"
+
+    # Apply find and replace if specified
+    find_str = scheme_params.get("find", "")
+    replace_str = scheme_params.get("replace", "")
+    if find_str:
+        base_name, ext = os.path.splitext(filename)
+        base_name = base_name.replace(find_str, replace_str)
+        filename = f"{base_name}{ext}"
+
+    # Apply case change if specified
+    case_option = scheme_params.get("case_option", "preserve")
+    if case_option != "preserve":
+        filename = change_case(filename, case_option)
+
+    # Apply sequential numbering if enabled
+    if scheme_params.get("use_numbering", False):
+        number_options = scheme_params.get("number_options", {})
+        filename = add_sequential_number(filename, index, number_options)
+
+    return filename
+
+
 def add_sequential_number(name: str, index: int, options: Dict[str, Any]) -> str:
     """
     Add a sequential number to a filename.
@@ -168,7 +183,7 @@ def add_sequential_number(name: str, index: int, options: Dict[str, Any]) -> str
             - step: Increment between numbers (default 1)
             - position: Where to add the number ('prefix', 'suffix')
             - separator: String to use between number and name
-    
+     
     Returns:
         Modified filename with sequential number
     """
@@ -194,51 +209,6 @@ def add_sequential_number(name: str, index: int, options: Dict[str, Any]) -> str
     # Return the modified name with the original extension
     return f"{new_base}{ext}"
 
-def generate_preview_name(original_path: str, index: int, scheme_params: Dict[str, Any]) -> str:
-    """
-    Generate a preview of the renamed file based on the renaming scheme.
-    
-    Args:
-        original_path: Path to the original file
-        index: The index of the file in the list (0-based)
-        scheme_params: Dictionary with renaming scheme parameters:
-            - replace_name: Whether to replace the entire name with new_name
-            - new_name: New name to use if replacing the entire name
-            - prefix: String to add at the beginning (if not replacing the name)
-            - suffix: String to add at the end (if not replacing the name)
-            - find: Substring to find
-            - replace: Replacement string
-            - case_option: Type of case change ('lower', 'upper', 'title', 'preserve')
-            - use_numbering: Whether to add sequential numbers
-            - number_options: Options for sequential numbering
-    
-    Returns:
-        Preview of the renamed file (filename only, no path)
-    """
-    # Get the original filename without path
-    filename = os.path.basename(original_path)
-    
-    # If replacing the entire name, use the new name
-    if scheme_params.get("replace_name", False):
-        # Keep the original extension
-        _, ext = os.path.splitext(filename)
-        # Use the new name with the original extension
-        filename = scheme_params.get("new_name", "") + ext
-    # Otherwise apply prefix and suffix if provided
-    elif scheme_params.get("prefix") or scheme_params.get("suffix"):
-        filename = add_prefix_suffix(
-            filename, 
-            scheme_params.get("prefix", ""), 
-            scheme_params.get("suffix", "")
-        )
-    
-    # Apply find and replace
-    if scheme_params.get("find"):
-        filename = replace_substring(
-            filename, 
-            scheme_params.get("find", ""), 
-            scheme_params.get("replace", "")
-        )
     
     # Apply case change
     if scheme_params.get("case_option", "preserve") != "preserve":
@@ -285,60 +255,6 @@ def get_example_previews(file_list: List[str], scheme_params: Dict[str, Any], co
     
     return previews
 
-def check_conflicts_and_validity(file_list: List[str], scheme_params: Dict[str, Any], destination_folder: Optional[str] = None) -> Dict[str, List[Tuple[str, str]]]:
-    """
-    Check for conflicts and validity issues with the renaming scheme.
-    
-    Args:
-        file_list: List of file paths to be renamed
-        scheme_params: Dictionary with renaming scheme parameters
-        destination_folder: Target folder for the renamed files (if moving)
-    
-    Returns:
-        Dictionary with identified issues:
-            - duplicates: List of (original_path, new_name) tuples for duplicate new names
-            - invalid_chars: List of (original_path, new_name) tuples with invalid characters
-            - existing_files: List of (original_path, new_name) tuples that would overwrite existing files
-    """
-    # Initialize the report
-    report = {
-        "duplicates": [],
-        "invalid_chars": [],
-        "existing_files": []
-    }
-    
-    # Invalid characters in filenames (platform-dependent)
-    invalid_pattern = r'[\\/:*?"<>|]' if os.name == 'nt' else r'/'
-    
-    # Track new names to detect duplicates
-    new_names = {}
-    
-    # Process each file
-    for i, original_path in enumerate(file_list):
-        # Generate the new filename
-        new_name = generate_preview_name(original_path, i, scheme_params)
-        
-        # Check for invalid characters
-        if re.search(invalid_pattern, new_name):
-            report["invalid_chars"].append((original_path, new_name))
-        
-        # Determine the target path
-        if destination_folder:
-            target_path = os.path.join(destination_folder, new_name)
-        else:
-            target_path = os.path.join(os.path.dirname(original_path), new_name)
-        
-        # Check for duplicates
-        if new_name in new_names:
-            report["duplicates"].append((original_path, new_name))
-        else:
-            new_names[new_name] = original_path
-        
-        # Check for existing files (if original and new path are different)
-        if os.path.normpath(original_path) != os.path.normpath(target_path) and os.path.exists(target_path):
-            report["existing_files"].append((original_path, new_name))
-    
-    return report
 
 def apply_rename(files_to_process: List[Tuple[str, int]], scheme_params: Dict[str, Any], move_to_folder: Optional[str] = None) -> Dict[str, Union[str, List[Tuple[str, str, str]]]]:
     """
@@ -418,3 +334,58 @@ def apply_rename(files_to_process: List[Tuple[str, int]], scheme_params: Dict[st
         "results": results,
         "message": message
     }
+def check_conflicts_and_validity(file_list: List[str], scheme_params: Dict[str, Any], destination_folder: Optional[str] = None) -> Dict[str, List[Tuple[str, str]]]:
+    """
+    Check for conflicts and validity issues with the renaming scheme.
+    
+    Args:
+        file_list: List of file paths to be renamed
+        scheme_params: Dictionary with renaming scheme parameters
+        destination_folder: Target folder for the renamed files (if moving)
+    
+    Returns:
+        Dictionary with identified issues:
+            - duplicates: List of (original_path, new_name) tuples for duplicate new names
+            - invalid_chars: List of (original_path, new_name) tuples with invalid characters
+            - existing_files: List of (original_path, new_name) tuples that would overwrite existing files
+    """
+    # Initialize the report
+    report = {
+        "duplicates": [],
+        "invalid_chars": [],
+        "existing_files": []
+    }
+    
+    # Invalid characters in filenames (platform-dependent)
+    invalid_pattern = r'[\\/:*?"<>|]' if os.name == 'nt' else r'/'
+    
+    # Track new names to detect duplicates
+    new_names = {}
+    
+    # Process each file
+    for i, original_path in enumerate(file_list):
+        # Generate the new filename
+        new_name = generate_preview_name(original_path, i, scheme_params)
+        
+        # Check for invalid characters
+        if re.search(invalid_pattern, new_name):
+            report["invalid_chars"].append((original_path, new_name))
+        
+        # Determine the target path
+        if destination_folder:
+            target_path = os.path.join(destination_folder, new_name)
+        else:
+            target_path = os.path.join(os.path.dirname(original_path), new_name)
+        
+        # Check for duplicates
+        if new_name in new_names:
+            report["duplicates"].append((original_path, new_name))
+        else:
+            new_names[new_name] = original_path
+        
+        # Check for existing files (if original and new path are different)
+        if os.path.normpath(original_path) != os.path.normpath(target_path) and os.path.exists(target_path):
+            report["existing_files"].append((original_path, new_name))
+    
+    return report
+
