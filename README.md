@@ -5,20 +5,21 @@ A Qt-based application for batch renaming image files with preview capabilities,
 ## Features
 - File browser with folder navigation
 - Thumbnail image previews with multi-selection
+- Loads all images in a folder without artificial limits
 - Multiple renaming schemes:
   - Custom name patterns
   - Find and replace text
   - Case conversion (lowercase, UPPERCASE, Title Case)
   - Sequential numbering with customizable options
 - Real-time preview of renamed files
-- Conflict detection and validation
+- Conflict detection and validation to prevent overwrites and invalid filenames
 - Option to move files to a different folder
 - Skip confirmation option for faster batch processing
 
 ## Requirements
 - Python 3.8+
-- PySide6 6.6.0
-- Pillow 10.0.0
+- PySide6 6.6.0 or newer
+- Pillow 10.0.0 or newer
 
 ## Installation
 ```bash
@@ -58,12 +59,10 @@ python3 src/main.py
 
 ## Development
 
-### Running Tests
+### Running Tests (optional)
+Tests are excluded from version control but can be run locally if present:
 ```bash
-# Run the test suite
 python3 -m unittest discover tests
-
-# Run specific functionality tests
 python3 tests/test_renamer_functionality.py
 ```
 
@@ -71,8 +70,8 @@ python3 tests/test_renamer_functionality.py
 - `src/main.py` - Application entry point
 - `src/renamer_engine.py` - Core renaming functionality
 - `src/ui_module.py` - Qt-based user interface
-- `tests/` - Unit tests
-- `Data/` - Sample images for testing
+- `tests/` - Unit tests (ignored in git)
+- `Data/` - Sample images for testing (ignored in git)
 
 ## License
 MIT
